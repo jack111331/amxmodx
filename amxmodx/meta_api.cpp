@@ -433,6 +433,10 @@ int	C_Spawn(edict_t *pent)
 	char configs_dir[256];
 
 	// ###### Load modules
+#ifdef JIT
+    AMXXLOG_Log("Execute her1e");
+    profilerSetupCallback(reinterpret_cast<void*>(profilerStart), reinterpret_cast<void*>(profilerEnd), reinterpret_cast<void*>(profilerReloc));
+#endif
 	loadModules(get_localinfo("amxx_modules", "addons/amxmodx/configs/modules.ini"), PT_ANYTIME);
 
 	get_localinfo_r("amxx_configsdir", "addons/amxmodx/configs", configs_dir, sizeof(configs_dir)-1);

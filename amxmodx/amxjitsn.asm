@@ -343,7 +343,27 @@
 global  asm_runJIT, _asm_runJIT
 global  amx_exec_jit, _amx_exec_jit
 global  getMaxCodeSize, _getMaxCodeSize
+global  profilerSetupCallback, _profilerSetupCallback
 
+; void profilerSetupCallback(void* start, void* stop, void* reloc)
+profilerSetupCallback:
+_profilerSetupCallback:
+	push ebp
+	push edx
+	mov ebp, esp
+
+	mov edx, [ebp+12]
+	mov [profiler_start], edx
+
+	mov edx, [ebp+16]
+	mov [profiler_end], edx
+
+	mov edx, [ebp+20]
+	mov [profiler_reloc], edx
+
+	pop edx
+	pop ebp
+	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                             ;
@@ -2420,6 +2440,12 @@ _getMaxCodeSize:
 
 section .data
         ALIGN   4       ; This is essential to avoid misalignment stalls.
+
+profiler_start	DD	0   ; Pointer to profiler start callback
+
+profiler_end	DD  0   ; Pointer to profiler end callback
+
+profiler_reloc	DD	0	; Pointer to profiler reloc callback, this is the callback that modifies the code BEFORE it is copied into the JIT
 
 end_code        DD  0   ; pointer to the end of the source code
 

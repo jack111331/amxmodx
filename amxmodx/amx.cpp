@@ -62,6 +62,7 @@
   #include <wchar.h>    /* for wcslen() */
 #endif
 #include "amx.h"
+#include "amxmodx.h"
 #if (defined _Windows && !defined AMX_NODYNALOAD) || (defined JIT && __WIN32__)
   #include <windows.h>
 #endif
@@ -468,8 +469,18 @@ int AMXAPI amx_Callback(AMX *amx, cell index, cell *result, cell *params)
 	  logfuncs->pfnLogParams(amx, params);
   }
 #endif //BINLOG_ENABLED
+    CPluginMngr::CPlugin* plugin = reinterpret_cast<CPluginMngr::CPlugin*>(amx->userdata[3]);
 
-  *result = f(amx,params);
+    if (plugin && plugin->isProfiling())
+    {
+        plugin->getProfile().StartNative(index);
+        *result = f(amx,params);
+        plugin->getProfile().StopNative(index);
+    }
+    else
+    {
+        *result = f(amx,params);
+    }
 
 #if defined BINLOG_ENABLED
   if (logfuncs)
@@ -510,6 +521,7 @@ static int amx_BrowseRelocate(AMX *amx)
   long codesize;
   OPCODE op;
   BROWSEHOOK hook = NULL;
+  CPluginMngr::CPlugin* plugin;
   #if defined __GNUC__ || defined ASM32 || defined JIT
     cell *opcode_list;
   #endif
@@ -660,6 +672,22 @@ static int amx_BrowseRelocate(AMX *amx)
     case OP_POP_PRI:
     case OP_POP_ALT:
     case OP_PROC:
+        /*
+        AMXXLOG_Log("Execute here4");
+        plugin = reinterpret_cast<CPluginMngr::CPlugin*>(amx->userdata[UD_FINDPLUGIN]);
+        AMXXLOG_Log("Execute here44");
+
+        if (plugin->isProfiling())
+        {
+            AMXXLOG_Log("Execute here444");
+
+            // don't forget, cip was already incremented here, need to decrease it when doing our math for this address
+            plugin->getProfile().AddFunction(reinterpret_cast<ucell>(amx->base) + reinterpret_cast<AMX_HEADER*>(amx->base)->cod + cip - sizeof(cell), cip - sizeof(cell));
+            AMXXLOG_Log("Execute here444");
+        }
+
+        break;
+         */
     case OP_RET:
     case OP_RETN:
     case OP_CALL_PRI:
@@ -2792,10 +2820,34 @@ int AMXAPI amx_Exec(AMX *amx, cell *retval, int index)
   parms[8] = (cell)codesize;
 
   #if defined ASM32 && defined JIT
-    if ((amx->flags & AMX_FLAG_JITC)!=0)
-      i = amx_exec_jit(parms,retval,amx->stp,hea);
-    else
-      i = amx_exec_asm(parms,retval,amx->stp,hea);
+    if ((amx->flags & AMX_FLAG_JITC)!=0) {
+      CPluginMngr::CPlugin* plugin = reinterpret_cast<CPluginMngr::CPlugin*>(amx->userdata[3]);
+
+      if (plugin && plugin->isProfiling())
+      {
+        plugin->getProfile().StartForward(index);
+        i = amx_exec_jit(parms,retval,amx->stp,hea);
+        plugin->getProfile().StopForward(index);
+	  }
+	  else
+	  {
+        i = amx_exec_jit(parms,retval,amx->stp,hea);
+	  }
+    }
+    else {
+      CPluginMngr::CPlugin* plugin = reinterpret_cast<CPluginMngr::CPlugin*>(amx->userdata[3]);
+
+      if (plugin && plugin->isProfiling())
+      {
+        plugin->getProfile().StartForward(index);
+        i = amx_exec_asm(parms,retval,amx->stp,hea);
+        plugin->getProfile().StopForward(index);
+	  }
+	  else
+	  {
+        i = amx_exec_asm(parms,retval,amx->stp,hea);
+	  }
+    }
   #elif defined ASM32
     i = amx_exec_asm(parms,retval,amx->stp,hea);
   #else

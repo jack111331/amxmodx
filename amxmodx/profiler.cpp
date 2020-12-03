@@ -1,14 +1,16 @@
 #include "amxmodx.h"
 
 #include "profilerbase.h" // messy platform specific stuff
-#include "CVector.h"
-#include "CString.h"
+#include "amtl/am-vector.h"
+#include "amtl/am-string.h"
+
+#include "CLibrarySys.h"
 
 #include "amx.h"
 
 #include <time.h>
 
-CVector<TemporaryProfile*> g_ProfileList;
+ke::Vector<TemporaryProfile*> g_ProfileList;
 
 extern "C" void const *amx_opcodelist_jit[];
 extern "C" AMX* jit_amxptr;
@@ -62,10 +64,10 @@ void PluginProfile::Setup(AMX* amx)
 
 			this->m_Forwards[i].setName(name);
 		}
-		
+
 
 		CPluginMngr::CPlugin* plugin = reinterpret_cast<CPluginMngr::CPlugin*>(amx->userdata[3]);
-		this->m_PluginName.assign(plugin->getName());
+		this->m_PluginName = plugin->getName();
 
 }
 // This will in-turn call PrintProfile(FILE* fp) with a file opened for the
@@ -77,20 +79,20 @@ void PluginProfile::PrintProfile()
 	char path[255];
 	build_pathname_r(path, sizeof(path)-1, "%s/profiles", data);
 	
-	if (!DirExists(path))
+	if (!g_LibSys.IsPathDirectory(path))
 	{
 		mkdir(path
 #if defined __linux__
 			, 0755
 #endif
 			);
-		if (!DirExists(path))
+		if (!g_LibSys.IsPathDirectory(path))
 			return;
 	}
 
 	char file[512];
 
-	build_pathname_r(file, sizeof(file)-1, "%s/profiles/%s.txt", data, this->m_PluginName.c_str());
+	build_pathname_r(file, sizeof(file)-1, "%s/profiles/%s.txt", data, this->m_PluginName.chars());
 	FILE* fp = fopen(file, "a");
 //	printf("Opening %s for writing...\n", file);
 	if (!fp)
@@ -113,19 +115,20 @@ void PluginProfile::PrintProfile(FILE* fp)
 	time(&rawtime);
 
 
-	String thetime;
+	ke::AString thetime;
 
-	thetime.assign(asctime(localtime(&rawtime)));
-	int loc = thetime.find('\n');
-	thetime.erase(loc, 1);
-	fprintf(fp, "date: %s map: %s\n", thetime.c_str(), STRING(gpGlobals->mapname));
+	thetime = asctime(localtime(&rawtime));
+	// TODO Add back when I have time zzz
+//	int loc = thetime.find('\n');
+//	thetime.erase(loc, 1);
+	fprintf(fp, "date: %s map: %s\n", thetime.chars(), STRING(gpGlobals->mapname));
 	fprintf(fp, "%4s | %32s | %10s | %-12s\n", "type", "name", "calls", "time / min / max");
 	fprintf(fp, "%4s---%32s---%10s---%12s\n", "----", "--------------------------------", "----------", "------------");
 
 	unsigned int native0 = 0;
 	unsigned int public0 = 0;
 	unsigned int function0 = 0;
-	for (size_t i = 0; i < this->m_Natives.size(); i++)
+	for (size_t i = 0; i < this->m_Natives.length(); i++)
 	{
 		NativeProfile* p = &this->m_Natives[i];
 
@@ -135,10 +138,10 @@ void PluginProfile::PrintProfile(FILE* fp)
 		}
 		else
 		{
-			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "n", p->getName().c_str(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
+			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "n", p->getName().chars(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
 		}
 	}
-	for (size_t i = 0; i < this->m_Forwards.size(); i++)
+	for (size_t i = 0; i < this->m_Forwards.length(); i++)
 	{
 		ForwardProfile* p = &this->m_Forwards[i];
 
@@ -148,10 +151,10 @@ void PluginProfile::PrintProfile(FILE* fp)
 		}
 		else
 		{
-			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "p", p->getName().c_str(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
+			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "p", p->getName().chars(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
 		}
 	}
-	for (size_t i = 0; i < this->m_Functions.size(); i++)
+	for (size_t i = 0; i < this->m_Functions.length(); i++)
 	{
 		FunctionProfile* p = &this->m_Functions[i];
 
@@ -161,7 +164,7 @@ void PluginProfile::PrintProfile(FILE* fp)
 		}
 		else
 		{
-			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "f", p->getName().c_str(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
+			fprintf(fp, "%4s | %32s | %10u | %lf / %lf / %lf\n", "f", p->getName().chars(), p->getCalls(), p->getTime(), p->getMin(), p->getMax());
 		}
 	}
 
@@ -215,7 +218,7 @@ void PluginProfile::StartProfile(BaseProfile* parent)
 // If not found (shouldn't happen, but...) it will return -1
 int PluginProfile::FindFunctionIndexByAddress(ucell addr)
 {
-	for (size_t i = 0; i < this->m_Functions.size(); i++)
+	for (size_t i = 0; i < this->m_Functions.length(); i++)
 	{
 		if (this->m_Functions[i].getAddress() == addr)
 		{
@@ -230,7 +233,7 @@ int PluginProfile::FindFunctionIndexByAddress(ucell addr)
 // address field is the JIT-relocated address field.
 void PluginProfile::AddFunction(ucell addr, ucell origaddr)
 {
-	this->m_Functions.push_back(FunctionProfile());
+	this->m_Functions.append(FunctionProfile());
 
 	FunctionProfile* fp = &(this->m_Functions.back());
 
@@ -248,7 +251,7 @@ void PluginProfile::AddFunction(ucell addr, ucell origaddr)
 	}
 	else
 	{
-		fp->setName(this->m_Funclist[index].name.c_str());
+		fp->setName(this->m_Funclist[index].name.chars());
 	}
 }
 
@@ -258,10 +261,10 @@ void PluginProfile::InsertFunctionSymbol(const char* name, ucell addr)
 {
 	funcsymbol_t sym;
 
-	sym.name.assign(name);
+	sym.name = name;
 	sym.addr = addr;
 
-	this->m_Funclist.push_back(sym);
+	this->m_Funclist.append(sym);
 
 
 }
@@ -270,7 +273,7 @@ void PluginProfile::InsertFunctionSymbol(const char* name, ucell addr)
 // If one does not exist, it returns -1.
 int PluginProfile::LookupFunctionSymbol(ucell addr)
 {
-	for (size_t i = 0; i < this->m_Funclist.size(); i++)
+	for (size_t i = 0; i < this->m_Funclist.length(); i++)
 	{
 		if (this->m_Funclist[i].addr == addr)
 		{
@@ -440,7 +443,7 @@ static cell AMX_NATIVE_CALL StartProfile(AMX* amx, cell* params)
 	TemporaryProfile* p = new TemporaryProfile;
 
 	// Iterate the vector, if any of the entries are NULL use them
-	for (size_t i = 0; i < g_ProfileList.size(); i++)
+	for (size_t i = 0; i < g_ProfileList.length(); i++)
 	{
 		if (g_ProfileList[i] == NULL)
 		{
@@ -453,11 +456,11 @@ static cell AMX_NATIVE_CALL StartProfile(AMX* amx, cell* params)
 	}
 
 	// No NULL entries, make a new one
-	g_ProfileList.push_back(p);
+	g_ProfileList.append(p);
 
 	p->Start();
 
-	return g_ProfileList.size();
+	return g_ProfileList.length();
 }
 // native Float:StopProfile(&Profile:what, const buffer[] = "", len = 0)
 static cell AMX_NATIVE_CALL StopProfile(AMX* amx, cell* params)
@@ -475,7 +478,7 @@ static cell AMX_NATIVE_CALL StopProfile(AMX* amx, cell* params)
 		}
 		handleid--;
 
-		if ((unsigned)handleid >= g_ProfileList.size())
+		if ((unsigned)handleid >= g_ProfileList.length())
 		{
 			LogError(amx, AMX_ERR_NATIVE, "Invalid handle passed to StopProfile");
 			return 0;

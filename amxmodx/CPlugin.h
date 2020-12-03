@@ -16,6 +16,7 @@
 #include <amtl/am-string.h>
 #include <amtl/am-vector.h>
 #include <amtl/am-autoptr.h>
+#include "profiler.h"
 
 // *****************************************************
 // class CPluginMngr
@@ -75,7 +76,7 @@ public:
 		ke::Vector<ke::AutoPtr<AutoConfig>> m_configs;
 
 		bool m_Profiling;
-		//PluginProfile m_Profile;
+		PluginProfile m_Profile;
 
 	public:
 		inline const char* getName() { return name.chars();}
@@ -108,6 +109,13 @@ public:
 		inline bool isDebug() const { return m_Debug; }
 		inline cell* getNullStringOfs() const { return m_pNullStringOfs; }
 		inline cell* getNullVectorOfs() const { return m_pNullVectorOfs; }
+
+        inline void setupProfiling()
+        {
+            this->m_Profile.Setup(&this->amx);
+        }
+        inline bool isProfiling() const { return this->m_Profiling; }
+        inline PluginProfile& getProfile() { return this->m_Profile; }
 	public:
 		void AddConfig(bool create, const char *name, const char *folder);
 		size_t GetConfigCount();

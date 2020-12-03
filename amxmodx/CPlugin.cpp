@@ -296,7 +296,10 @@ CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size
 		status = ps_bad_load;
 	}
 
-	amx.userdata[UD_FINDPLUGIN] = this;
+    amx.userdata[UD_FINDPLUGIN] = this;
+    if(this->isProfiling()) {
+        this->setupProfiling();
+    }
 	paused_fun = 0;
 	next = 0;
 	id = i;
@@ -325,6 +328,10 @@ CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size
 
 CPluginMngr::CPlugin::~CPlugin()
 {
+    if (this->isProfiling())
+    {
+        this->getProfile().PrintProfile();
+    }
 	unload_amxscript(&amx, &code);
 }
 

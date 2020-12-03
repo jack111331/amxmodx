@@ -225,7 +225,7 @@ int load_amxscript_internal(AMX *amx, void **program, const char *filename, char
 #endif
 	}
 
-    if ((int)CVAR_GET_FLOAT("amx_profile") >= 2 ||profile) {
+    if ((int)CVAR_GET_FLOAT("amx_profile") >= 2 || profile) {
         amx->flags |= AMX_FLAG_PROFILE;
     }
 

@@ -4,8 +4,8 @@
 #include "amxmodx.h"
 
 #include "profilerbase.h" // messy platform specific stuff
-#include "CVector.h"
-#include "CString.h"
+#include <amtl/am-vector.h>
+#include <amtl/am-string.h>
 #include "sh_stack.h"
 #include "amx.h"
 
@@ -28,28 +28,28 @@ void __PROFILER_DECL profilerEnd(void* plugin, cell index); // Called after a pr
 class NativeProfile : public BaseProfile
 {
 protected:
-	String m_Name;
+	ke::AString m_Name;
 	
 public:
 	NativeProfile() : BaseProfile() { }
 	NativeProfile(const char* name) : BaseProfile(), m_Name(name) 	{	}
 	
-	const String& getName() const { return this->m_Name; }
-	void setName(const char* name) { this->m_Name.assign(name); }
+	const ke::AString& getName() const { return this->m_Name; }
+	void setName(const char* name) { this->m_Name = name; }
 };
 
 class FunctionProfile : public BaseProfile
 {
 protected:
-	String m_Name;
+    ke::AString m_Name;
 	ucell m_Address;
 
 public:
 	FunctionProfile() : BaseProfile() { }
 	FunctionProfile(const char* name) : BaseProfile(), m_Name(name) { }
 
-	const String& getName() const { return this->m_Name; }
-	void setName(const char* name) { this->m_Name.assign(name); }
+	const ke::AString& getName() const { return this->m_Name; }
+	void setName(const char* name) { this->m_Name = name; }
 
 	ucell getAddress() const { return this->m_Address; }
 	void setAddress(ucell addr) { this->m_Address = addr; }
@@ -57,29 +57,30 @@ public:
 class ForwardProfile : public BaseProfile
 {
 protected:
-	String m_Name;
+    ke::AString m_Name;
 
 public:
 	ForwardProfile() : BaseProfile() { }
 	ForwardProfile(const char* name) : BaseProfile(), m_Name(name) { }
 
-	const String& getName() { return this->m_Name; }
-	void setName(const char* name) { this->m_Name.assign(name); }
+	const ke::AString& getName() { return this->m_Name; }
+	void setName(const char* name) { this->m_Name = name; }
 };
 
 typedef struct funcsymbol_s
 {
 	ucell		addr;
-	String		name;
+    ke::AString		name;
 } funcsymbol_t;
 class PluginProfile
 {
 protected:
-	CVector<NativeProfile> m_Natives;
-	CVector<ForwardProfile> m_Forwards;
-	CVector<FunctionProfile> m_Functions;
-	CVector<funcsymbol_t> m_Funclist;
-	String m_PluginName;
+    // FIXME change vector type
+	ke::Vector<NativeProfile> m_Natives;
+    ke::Vector<ForwardProfile> m_Forwards;
+    ke::Vector<FunctionProfile> m_Functions;
+    ke::Vector<funcsymbol_t> m_Funclist;
+    ke::AString m_PluginName;// TODO change type
 	CStack<TemporaryProfile*> m_TempStack;
 
 public:
@@ -118,7 +119,7 @@ public:
 };
 
 // This needs to be extern to clear it from stale profiles each map change
-extern CVector<TemporaryProfile*> g_ProfileList;
+extern ke::Vector<TemporaryProfile*> g_ProfileList;
 extern AMX_NATIVE_INFO profile_Natives[];
 
 #endif // _PROFILER_H_
