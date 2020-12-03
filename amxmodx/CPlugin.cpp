@@ -18,14 +18,14 @@
 
 extern const char *no_function;
 
-CPluginMngr::CPlugin* CPluginMngr::loadPlugin(const char* path, const char* name, char* error, size_t maxLength, int debug)
+CPluginMngr::CPlugin* CPluginMngr::loadPlugin(const char* path, const char* name, char* error, size_t maxLength, int debug, int profile)
 {
 	CPlugin** a = &head;
 
 	while (*a)
 		a = &(*a)->next;
 
-	*a = new CPlugin(pCounter++, path, name, error, maxLength, debug);
+	*a = new CPlugin(pCounter++, path, name, error, maxLength, debug, profile);
 
 	return (*a);
 }
@@ -76,6 +76,7 @@ int CPluginMngr::loadPluginsFromFile(const char* filename, bool warn)
 	// Find now folder
 	char pluginName[256], error[256], debug[256];
 	int debugFlag = 0;
+	int profileFlag = 0;
 	const char *pluginsDir = get_localinfo("amxx_pluginsdir", "addons/amxmodx/plugins");
 
 	char line[512];
@@ -88,6 +89,7 @@ int CPluginMngr::loadPluginsFromFile(const char* filename, bool warn)
 
 		debug[0] = '\0';
 		debugFlag = 0;
+		profileFlag = 0;
 
 		line[0] = '\0';
 		fgets(line, sizeof(line), fp);
@@ -115,6 +117,11 @@ int CPluginMngr::loadPluginsFromFile(const char* filename, bool warn)
 			debugFlag = 1;
 		}
 
+        if (isalnum(*debug) && !strcmp(debug, "profile"))
+        {
+            profileFlag = 1;
+        }
+
 		bool skip = false;
 		for (block_iter = m_BlockList.begin();
 			 block_iter != m_BlockList.end();
@@ -137,7 +144,7 @@ int CPluginMngr::loadPluginsFromFile(const char* filename, bool warn)
 			continue;
 		}
 
-		CPlugin* plugin = loadPlugin(pluginsDir, pluginName, error, sizeof(error), debugFlag);
+		CPlugin* plugin = loadPlugin(pluginsDir, pluginName, error, sizeof(error), debugFlag, profileFlag);
 
 		if (plugin->getStatusCode() == ps_bad_load)
 		{
@@ -267,7 +274,7 @@ const char* CPluginMngr::CPlugin::getStatus() const
 	return "error";
 }
 
-CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size_t m, int d) : name(n), title(n), m_pNullStringOfs(nullptr), m_pNullVectorOfs(nullptr)
+CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size_t m, int d, int profile) : name(n), title(n), m_pNullStringOfs(nullptr), m_pNullVectorOfs(nullptr)
 {
 	const char* unk = "unknown";
 
@@ -280,7 +287,7 @@ CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size
 	char* path = build_pathname_r(file, sizeof(file), "%s/%s", p, n);
 	code = 0;
 	memset(&amx, 0, sizeof(AMX));
-	int err = load_amxscript_ex(&amx, &code, path, e, m, d);
+	int err = load_amxscript_ex(&amx, &code, path, e, m, d, profile);
 
 	if (err == AMX_ERR_NONE)
 	{
@@ -305,6 +312,14 @@ CPluginMngr::CPlugin::CPlugin(int i, const char* p, const char* n, char* e, size
 		} else {
 			m_Debug = false;
 		}
+
+        if (amx.flags & AMX_FLAG_PROFILE)
+        {
+            m_Profiling = true;
+            AMXXLOG_Log("[AMXX] Plugin \"%s\" set to profile", name.chars());
+        } else {
+            m_Profiling = false;
+        }
 	}
 }
 

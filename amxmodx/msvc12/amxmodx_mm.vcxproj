@@ -440,6 +440,7 @@ md -p JIT 2&gt;NUL
     <ClInclude Include="..\newmenus.h" />
     <ClInclude Include="..\nongpl_matches.h" />
     <ClInclude Include="..\optimizer.h" />
+    <ClInclude Include="..\profilerbase.h" />
     <ClInclude Include="..\textparse.h" />
     <ClInclude Include="..\trie_natives.h" />
     <ClInclude Include="..\..\public\sdk\amxxmodule.h" />

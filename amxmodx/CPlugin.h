@@ -66,13 +66,17 @@ public:
 		CPlugin* next;
 		int id;
 		
-		CPlugin(int i, const char* p, const char* n, char* e, size_t m, int d);
+		CPlugin(int i, const char* p, const char* n, char* e, size_t m, int d, int profile);
 		~CPlugin();
 		
 		bool m_Debug;
 		cell* m_pNullStringOfs;
 		cell* m_pNullVectorOfs;
 		ke::Vector<ke::AutoPtr<AutoConfig>> m_configs;
+
+		bool m_Profiling;
+		//PluginProfile m_Profile;
+
 	public:
 		inline const char* getName() { return name.chars();}
 		inline const char* getVersion() { return version.chars();}
@@ -122,7 +126,7 @@ public:
 
 	// Interface
 
-	CPlugin* loadPlugin(const char* path, const char* name, char* error, size_t maxLength, int debug);
+	CPlugin* loadPlugin(const char* path, const char* name, char* error, size_t maxLength, int debug, int profile);
 	void unloadPlugin(CPlugin** a);
 	int loadPluginsFromFile(const char* filename, bool warn=true);
 	

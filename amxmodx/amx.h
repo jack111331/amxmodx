@@ -321,6 +321,7 @@ enum {
 #define AMX_FLAG_BYTEOPC  0x08  /* opcode is a byte (not a cell) */
 #define AMX_FLAG_NOCHECKS 0x10  /* no array bounds checking; no STMT opcode */
 /*      AMX_FLAG_OLDFILE  0x20	   Old AMX Mod plugin */
+#define AMX_FLAG_PROFILE  0x40  /* profile. available */
 #define AMX_FLAG_PRENIT	 0x100	/* pre-initialized, do not check natives */
 #define AMX_FLAG_NTVREG 0x1000  /* all native functions are registered */
 #define AMX_FLAG_JITC   0x2000  /* abstract machine is JIT compiled */

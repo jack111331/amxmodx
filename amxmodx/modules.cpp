@@ -108,7 +108,7 @@ static binlogfuncs_t logfuncs =
 };
 #endif
 
-int load_amxscript_internal(AMX *amx, void **program, const char *filename, char *error, size_t maxLength, int debug)
+int load_amxscript_internal(AMX *amx, void **program, const char *filename, char *error, size_t maxLength, int debug, int profile)
 {
 	*error = 0;
 	size_t bufSize;
@@ -224,6 +224,10 @@ int load_amxscript_internal(AMX *amx, void **program, const char *filename, char
 		amx->flags |= AMX_FLAG_JITC;
 #endif
 	}
+
+    if ((int)CVAR_GET_FLOAT("amx_profile") >= 2 ||profile) {
+        amx->flags |= AMX_FLAG_PROFILE;
+    }
 
 	if (g_opt_level != 65536)
 	{
@@ -352,15 +356,15 @@ int load_amxscript_internal(AMX *amx, void **program, const char *filename, char
 	return (amx->error = AMX_ERR_NONE);
 }
 
-int load_amxscript_ex(AMX *amx, void **program, const char *filename, char *error, size_t maxLength, int debug)
+int load_amxscript_ex(AMX *amx, void **program, const char *filename, char *error, size_t maxLength, int debug, int profile)
 {
-	return load_amxscript_internal(amx, program, filename, error, maxLength, debug);
+	return load_amxscript_internal(amx, program, filename, error, maxLength, debug, profile);
 }
 
 // Deprecated. Use load_amxscript_ex() or MF_LoadAmxScriptEx() for modules. This function is kept to maintain backward compatibility.
 int load_amxscript(AMX *amx, void **program, const char *filename, char error[64], int debug)
 {
-	return load_amxscript_internal(amx, program, filename, error, 64 /* error max length */, debug);
+	return load_amxscript_internal(amx, program, filename, error, 64 /* error max length */, debug, 0);
 }
 
 const char *StrCaseStr(const char *as, const char *bs)
